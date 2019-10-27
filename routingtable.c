@@ -17,6 +17,7 @@ void InitRoutingTbl (struct pkt_INIT_RESPONSE *InitResponse, int myID){
 ////////////////////////////////////////////////////////////////
 int UpdateRoutes(struct pkt_RT_UPDATE *RecvdUpdatePacket, int costToNbr, int myID){
 	/* ----- YOUR CODE HERE ----- */
+	int route_number = NumRoutes;
 	int count = 0;
 	struct route_entry re;
 	int upd_id;
@@ -36,12 +37,9 @@ int UpdateRoutes(struct pkt_RT_UPDATE *RecvdUpdatePacket, int costToNbr, int myI
 				continue ; // CHANGE THIS LATER
 			}
 		}
-
-
-
 	}
-
-
+	if (NumRoutes == route_number) { return 0; }
+	return 1;
 
 
 }
