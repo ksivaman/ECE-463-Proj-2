@@ -10,6 +10,31 @@ int NumRoutes;
 ////////////////////////////////////////////////////////////////
 void InitRoutingTbl (struct pkt_INIT_RESPONSE *InitResponse, int myID){
 	/* ----- YOUR CODE HERE ----- */
+	// Set route to itself with cost 0
+	InitResponse->nbrcost[InitResponse->no_nbr].nbr = myID;
+	InitResponse->nbrcost[InitResponse->no_nbr].cost = 0;
+
+	// Initialize dest_id to -1 in case it isnt used
+	for (int i = 0; i < MAX_ROUTERS; i++)
+	{
+		routingTable[i].dest_id = -1;
+	}
+
+	// Initialize router table
+	for (int i = 0; i <= InitResponse->no_nbr; i++)
+	{
+		int routerID = InitResponse->nbrcost[i].nbr;
+
+		routingTable[routerID].dest_id = InitResponse->nbrcost[i].nbr;
+		routingTable[routerID].next_hop = InitResponse->nbrcost[i].nbr;
+		routingTable[routerID].cost = InitResponse->nbrcost[i].cost;
+		routingTable[routerID].path_len = InitResponse->nbrcost[i].cost;
+		routingTable[routerID].path[0] = InitResponse->nbrcost[i].nbr;
+	}
+
+	// Update NumRoutes
+	NumRoutes = InitResponse->no_nbr;
+
 	return;
 }
 
@@ -66,6 +91,13 @@ struct route_entry {
 ////////////////////////////////////////////////////////////////
 void ConvertTabletoPkt(struct pkt_RT_UPDATE *UpdatePacketToSend, int myID){
 	/* ----- YOUR CODE HERE ----- */
+
+	UpdatePacketToSend->sender_id = myID;
+	UpdatePacketToSend->no_routes = NumRoutes;
+
+	for (int i = 0; i < MAX_ROUTERS; i++)
+		UpdatePacketToSend->route[i] = routingTable[i];
+
 	return;
 }
 
