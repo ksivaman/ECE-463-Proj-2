@@ -3,7 +3,7 @@
    *
    *  File Name: unit-test.c
    *
-   *  Purpose: Contains Unit test cases to test the functions in routingtable.c 
+   *  Purpose: Contains Unit test cases to test the functions in routingtable.c
    *
    */
 
@@ -74,7 +74,7 @@ int TestInitRT() {
     nbrs.nbrcost[0].cost = 4;
     nbrs.nbrcost[1].nbr = 2;
     nbrs.nbrcost[1].cost = 3;
-    
+
     InitRoutingTbl (&nbrs, MyRouterId);
     ConvertTabletoPkt(&resultpkt, MyRouterId);
     printPacket(&resultpkt);
@@ -100,8 +100,8 @@ int TestNewRoute() {
     int i;
     int nbr = 999;
 
-    struct pkt_RT_UPDATE updpkt, resultpkt; 
- 
+    struct pkt_RT_UPDATE updpkt, resultpkt;
+
     updpkt.sender_id = 1;
     updpkt.dest_id = 0;
     updpkt.no_routes = 1;
@@ -117,7 +117,7 @@ int TestNewRoute() {
     printPacket(&resultpkt);
     MyAssert(resultpkt.no_routes==4,"Incorrect number of routes after adding a new destination");
     for(i=0; i<resultpkt.no_routes; i++) {
-        if(resultpkt.route[i].dest_id == 4) {   
+        if(resultpkt.route[i].dest_id == 4) {
            nbr = i;
         }
     }
@@ -136,7 +136,7 @@ int TestDVUpdate() {
 
     int i;
     int nbr = 999;
-    struct pkt_RT_UPDATE updpkt, resultpkt;   
+    struct pkt_RT_UPDATE updpkt, resultpkt;
 
     updpkt.sender_id = 2;
     updpkt.dest_id = 0;
@@ -170,7 +170,7 @@ int TestForcedUpd() {
 
     int i;
     int nbr = 999;
-    struct pkt_RT_UPDATE updpkt, resultpkt;   
+    struct pkt_RT_UPDATE updpkt, resultpkt;
 
     updpkt.sender_id = 2;
     updpkt.dest_id = 0;
@@ -204,7 +204,7 @@ int TestSplitHorizon() {
 
     int i;
     int nbr = 999;
-    struct pkt_RT_UPDATE updpkt, resultpkt;   
+    struct pkt_RT_UPDATE updpkt, resultpkt;
 
     updpkt.sender_id = 2;
     updpkt.dest_id = 0;
@@ -245,10 +245,10 @@ int main (int argc, char *argv[])
     printf("Test Case 1: PASS Initialized routing table\n");
 
 //Testing New Route Update
-    
+
     TestNewRoute();
     printf("Test Case 2: PASS Added new route to routing table\n");
-   
+
 //Testing Distance Vector Calculation
 
     TestDVUpdate();
