@@ -22,8 +22,9 @@ void InitRoutingTbl (struct pkt_INIT_RESPONSE *InitResponse, int myID){
 		routingTable[routerID].dest_id = InitResponse->nbrcost[i].nbr;
 		routingTable[routerID].next_hop = InitResponse->nbrcost[i].nbr;
 		routingTable[routerID].cost = InitResponse->nbrcost[i].cost;
-		routingTable[routerID].path_len = InitResponse->nbrcost[i].cost;
-		routingTable[routerID].path[0] = InitResponse->nbrcost[i].nbr;
+		routingTable[routerID].path_len = 2;
+		routingTable[routerID].path[0] = myID;
+		routingTable[routerID].path[1] = InitResponse->nbrcost[i].nbr;
 	}
 
 	routingTable[myID].dest_id = myID;
@@ -48,26 +49,36 @@ int UpdateRoutes(struct pkt_RT_UPDATE *RecvdUpdatePacket, int costToNbr, int myI
 	int routingTableChange = 0;
 
 
-	for (int i = 0; i < MAX_ROUTERS; i++)
+	for (int i = 0; i < RecvdUpdatePacket->no_routes; i++)
 	{
 		routeEntry = RecvdUpdatePacket->route[i];
-		if (routeEntry[].path_len = 0)
-			continue;
-		if ((routeEntry.cost + costToNbr < routingTable[routeEntry.dest_id].cost) || (routingTable[routeEntry.dest_id].path_len == 0))
+
+		// Split Horizon
+		int split = 0;
+		for (int i = 0; i < routeEntry.path_len; i++)
 		{
+			if (routeEntry.path[i] == myID)
+				split = 1;
+		}
+
+		if (routeEntry.path_len == 0 || split)
+			continue;
+		if ((RecvdUpdatePacket->sender_id == routingTable[routeEntry.dest_id].next_hop) || (routeEntry.cost + costToNbr < routingTable[routeEntry.dest_id].cost) || (routingTable[routeEntry.dest_id].path_len == 0))
+		{
+			if (routingTable[routeEntry.dest_id].path_len == 0)
+				NumRoutes++;
 			routingTable[routeEntry.dest_id].dest_id = routeEntry.dest_id;
 			routingTable[routeEntry.dest_id].next_hop = routeEntry.next_hop;
 			routingTable[routeEntry.dest_id].cost = routeEntry.cost + costToNbr;
-			routingTable[routeEntry.dest_id].path_len = routeEntry.path_len;
-			for (int j = 0; j < MAX_PATH_LEN; j++)
-				routingTable[routeEntry.dest_id].path[j] = routeEntry.path[j];
+			routingTable[routeEntry.dest_id].path_len = routeEntry.path_len + 1;
+			routingTable[routeEntry.dest_id].path[0] = myID;
+			for (int j = 0; j < routeEntry.path_len; j++)
+				routingTable[routeEntry.dest_id].path[j + 1] = routeEntry.path[j];
 			routingTableChange = 1;
 		}
 	}
 
 	return routingTableChange;
-
-
 }
 
 ////////////////////////////////////////////////////////////////
@@ -76,15 +87,20 @@ void ConvertTabletoPkt(struct pkt_RT_UPDATE *UpdatePacketToSend, int myID)
 	/* ----- YOUR CODE HERE ----- */
 	UpdatePacketToSend->sender_id = myID;
 	UpdatePacketToSend->no_routes = NumRoutes;
+	int j = 0;
 
 	for (int i = 0; i < MAX_ROUTERS; i++)
 	{
-		UpdatePacketToSend->route[i].dest_id = routingTable[i].dest_id;
-		UpdatePacketToSend->route[i].next_hop = routingTable[i].next_hop;
-		UpdatePacketToSend->route[i].cost = routingTable[i].cost;
-		UpdatePacketToSend->route[i].path_len = routingTable[i].path_len;
-		for (int j = 0; j < MAX_PATH_LEN; j++)
-			UpdatePacketToSend->route[i].path[j] = routingTable[i].path[j];
+		if (routingTable[i].path_len != 0)
+		{
+			UpdatePacketToSend->route[j].dest_id = routingTable[i].dest_id;
+			UpdatePacketToSend->route[j].next_hop = routingTable[i].next_hop;
+			UpdatePacketToSend->route[j].cost = routingTable[i].cost;
+			UpdatePacketToSend->route[j].path_len = routingTable[i].path_len;
+			for (int k = 0; k < MAX_PATH_LEN; k++)
+				UpdatePacketToSend->route[j].path[k] = routingTable[i].path[k];
+			j++;
+		}
 	}
 
 	return;
