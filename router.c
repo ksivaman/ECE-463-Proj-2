@@ -65,23 +65,21 @@ in Timer
     }
 
     // Prepare UDP sendto().
+  
     bzero( &serveraddr, sizeof(serveraddr));
     serveraddr.sin_family = AF_INET;
     serveraddr.sin_port = htons(ne_udp_port);
     memcpy((void *) &serveraddr.sin_addr, hp->h_addr_list[0], hp->h_length);
-    //bcopy((char *)hp->h_addr, (char *)&serveraddr.sin_addr.s_addr, hp->h_length);
 
     struct pkt_INIT_REQUEST init_request;
-    init_request.router_id = htons(rID);
+    init_request.router_id = htonl(rID); //htons(rID);
 
     sendto_size = sizeof(serveraddr);
     recvfrom_size = sendto_size;
     pkt_size = sizeof(init_request);
 
-    //sigaction(SIGPIPE, &(struct sigaction){SIG_IGN}, NULL);
     sendto_len = sendto(nefd, &init_request, pkt_size, 0, (struct sockaddr *) &serveraddr, sendto_size);
     printf("This is test)");
-    //recvfrom_len = recvfrom(sockfd, )
 
     return 1;
   }
