@@ -11,11 +11,12 @@ int NumRoutes;
 void InitRoutingTbl (struct pkt_INIT_RESPONSE *InitResponse, int myID){
 	/* ----- YOUR CODE HERE ----- */
 	// Set route to itself with cost 0
-	InitResponse->nbrcost[InitResponse->no_nbr].nbr = myID;
-	InitResponse->nbrcost[InitResponse->no_nbr].cost = 0;
+
+	//InitResponse->nbrcost[InitResponse->no_nbr].nbr = myID;
+	//InitResponse->nbrcost[InitResponse->no_nbr].cost = 0;
 
 	// Initialize router table
-	for (int i = 0; i <= InitResponse->no_nbr; i++)
+	for (int i = 0; i < InitResponse->no_nbr; i++)
 	{
 		int routerID = InitResponse->nbrcost[i].nbr;
 

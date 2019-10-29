@@ -33,6 +33,41 @@ in Timer
   ./router <router ID> <ne hostname> <ne UDP port> <router UDP port>
   */
 
+  int open_listenfd_udp(int port)
+  {
+  	int n = 0;
+  	int listenfd, optval=1;
+  	struct sockaddr_in serveraddr;
+
+  	/* Create a socket descriptor */
+  	if ((listenfd = socket(AF_INET, SOCK_DGRAM, 0)) < 0)
+  		return -1;
+
+  	/* Eliminates "Address already in use" error from bind. */
+  	if (setsockopt(listenfd, SOL_SOCKET, SO_REUSEADDR,
+  				(const void *)&optval , sizeof(int)) < 0)
+  		return -1;
+
+  	/* Listenfd will be an endpoint for all requests to port
+  	   on any IP address for this host */
+  	bzero((char *) &serveraddr, sizeof(serveraddr));
+  	serveraddr.sin_family = AF_INET;
+  	serveraddr.sin_addr.s_addr = htonl(INADDR_ANY);
+  	serveraddr.sin_port = htons((unsigned short)port);
+  	if ((n=bind(listenfd, (struct sockaddr *)&serveraddr, sizeof(serveraddr))) < 0)
+  	{
+  		if (n == -1)
+  		{
+  			perror("Error binding to specified port!");
+  			return EXIT_FAILURE;
+  		}
+  		return -1;
+  	}
+
+  	return listenfd;
+  }
+
+
   int main (int argc, char *argv[])
   {
     if (argc != 5) {
@@ -51,21 +86,24 @@ in Timer
     r_udp_port = atoi(argv[4]);   //  UDP Port for Router.
 
     // Create UDP socket, and send pkt_INIT_REQUEST
-    int nefd, sendto_len, recvfrom_len, sendto_size, recvfrom_size, pkt_size;
+    int nefd, sendto_len, recvfrom_len, sendto_size, pkt_size;
+    socklen_t recvfrom_size;
     struct hostent *hp;
-    struct sockaddr_in serveraddr;
+    struct sockaddr_in serveraddr, recvaddr;
 
     // Create socket.
-    if ((nefd = socket(AF_INET, SOCK_DGRAM, 0)) < 0) {
+    /*if ((nefd = socket(AF_INET, SOCK_DGRAM, 0)) < 0) {
       return -1;
-    }
+    }*/
     // Get server IP by name (localhost).
     if ((hp = gethostbyname(hostname)) == NULL) {
       return -2;
     }
 
     // Prepare UDP sendto().
-  
+
+    nefd = open_listenfd_udp(r_udp_port);
+
     bzero( &serveraddr, sizeof(serveraddr));
     serveraddr.sin_family = AF_INET;
     serveraddr.sin_port = htons(ne_udp_port);
@@ -79,7 +117,14 @@ in Timer
     pkt_size = sizeof(init_request);
 
     sendto_len = sendto(nefd, &init_request, pkt_size, 0, (struct sockaddr *) &serveraddr, sendto_size);
-    printf("This is test)");
+
+    struct pkt_INIT_RESPONSE init_response;
+    pkt_size = sizeof(init_response);
+    recvfrom_len = recvfrom(nefd, &init_response, pkt_size, 0, (struct sockaddr *) &recvaddr, &recvfrom_size);
+
+    ntoh_pkt_INIT_RESPONSE(&init_response);
+    InitRoutingTbl(&init_response, rID);
+    printf("This is a test");
 
     return 1;
   }
