@@ -1,5 +1,7 @@
 #include "ne.h"
 #include "router.h"
+#include <pthread.h>
+#include <time.h>
 
 //#include <signal.h>
 
@@ -31,6 +33,15 @@ in Timer
   if it has converged, append converged
 
   ./router <router ID> <ne hostname> <ne UDP port> <router UDP port>
+
+
+UpdateRoutes returns 0 or 1 for a changed routingTable
+If 1, restart the clock
+If 0, don't
+
+What if multiple UDP messages come in at the same time?
+
+
   */
 
   int open_listenfd_udp(int port)
@@ -124,7 +135,31 @@ in Timer
 
     ntoh_pkt_INIT_RESPONSE(&init_response);
     InitRoutingTbl(&init_response, rID);
-    printf("This is a test");
+
+    pthread_t udp_thread_id;
+  	pthread_t timer_thread_id;
+
+    if(pthread_create(&udp_thread_id, NULL, withdrawalFnLock, NULL)){
+      perror("Error creating thread for withdrawing money!");
+      return EXIT_FAILURE;
+    }
+
+    if(pthread_create(&timer_thread_id, NULL, depositFnLock, NULL)){
+      perror("Error creating thread for depositing money!");
+      return EXIT_FAILURE;
+    }
+
+    pthread_join(udp_thread_id, NULL);
+    pthread_join(timer_thread_id, NULL);
 
     return 1;
+  }
+
+  void *udp_thread(void *arguments) {
+
+    return ;
+  }
+  void *timer_thread(void *arguments) {
+
+    return ;
   }
