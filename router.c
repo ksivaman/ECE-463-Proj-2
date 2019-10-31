@@ -3,10 +3,33 @@
 #include <pthread.h>
 #include <time.h>
 
-//#include <signal.h>
+/* ----- Function Declarations ----- */
+void *timer_thread(void *arguments);
+void *udp_thread(void *arguments);
+void update_tim_last_update(int yourID);
+void update_nbr_info(struct pkt_INIT_RESPONSE *InitResponse);
 
 
 /* ----- GLOBAL VARIABLES ----- */
+int nefd, rID, tim_update_interval;
+socklen_t recvfrom_size;
+struct sockaddr_in serveraddr, recvaddr;
+struct pkt_RT_UPDATE pkt_update_in, pkt_update_out;
+int update_size = sizeof(pkt_update_in);
+
+
+
+
+/* Create a struct to store the info of neighbors to the router.
+   This will be used for sending update messages. */
+struct neighbor_info {
+  unsigned int nID;
+  int cost;
+  int tim_last_update;
+};
+
+int no_nbrs;
+struct neighbor_info neighbors[MAX_ROUTERS];
 
 /*
 1) Send pkt_INIT_REQUEST
@@ -88,64 +111,77 @@ What if multiple UDP messages come in at the same time?
       return 0;
     }
 
-    int rID, ne_udp_port, r_udp_port;
+    /* ----- Declare Variables ----- */
+    int ne_udp_port, r_udp_port;
     char *hostname;
+    int sendto_len, recvfrom_len, sendto_size, pkt_size;
+    struct hostent *hp;
+    struct pkt_INIT_RESPONSE init_response;
+    struct pkt_INIT_REQUEST init_request;
+    pthread_t udp_thread_id;
+  	pthread_t timer_thread_id;
 
+    /* ----- Parse Input Arguments ----- */
     rID = atoi(argv[1]);          // Router ID.
     hostname = argv[2];           // Server name.
   	ne_udp_port = atoi(argv[3]);  // UDP Port for Network Emulator.
     r_udp_port = atoi(argv[4]);   //  UDP Port for Router.
 
-    // Create UDP socket, and send pkt_INIT_REQUEST
-    int nefd, sendto_len, recvfrom_len, sendto_size, pkt_size;
-    socklen_t recvfrom_size;
-    struct hostent *hp;
-    struct sockaddr_in serveraddr, recvaddr;
 
-    // Create socket.
-    /*if ((nefd = socket(AF_INET, SOCK_DGRAM, 0)) < 0) {
-      return -1;
-    }*/
-    // Get server IP by name (localhost).
+    /* ----- 1) Create socket ----- */
+    /* ----- 2) Initialize contact with NE  ----- */
+    /* ----- 3) Start threads ----- */
+
+
+    // 1) Create UDP socket, bind router to given port number.
+    nefd = open_listenfd_udp(r_udp_port);
+    /* ----- END 1 ----- */
+
+
+    // 2.a) Set up struct sockaddr_in with NE contact info.
     if ((hp = gethostbyname(hostname)) == NULL) {
       return -2;
     }
-
-    // Prepare UDP sendto().
-
-    nefd = open_listenfd_udp(r_udp_port);
-
     bzero( &serveraddr, sizeof(serveraddr));
     serveraddr.sin_family = AF_INET;
     serveraddr.sin_port = htons(ne_udp_port);
     memcpy((void *) &serveraddr.sin_addr, hp->h_addr_list[0], hp->h_length);
+    /* ----- END 2.a ----- */
 
-    struct pkt_INIT_REQUEST init_request;
+
+    // 2.b) Set up packet for initial request.
     init_request.router_id = htonl(rID); //htons(rID);
+    /* ----- END 2.b ----- */
 
+
+    // 2.c) Contact NE.
     sendto_size = sizeof(serveraddr);
-    recvfrom_size = sendto_size;
     pkt_size = sizeof(init_request);
-
     sendto_len = sendto(nefd, &init_request, pkt_size, 0, (struct sockaddr *) &serveraddr, sendto_size);
+    /* ----- END 2.c ----- */
 
-    struct pkt_INIT_RESPONSE init_response;
+
+    // 2.d) Receive update packet from NE.  Interpret response.
     pkt_size = sizeof(init_response);
     recvfrom_len = recvfrom(nefd, &init_response, pkt_size, 0, (struct sockaddr *) &recvaddr, &recvfrom_size);
 
     ntoh_pkt_INIT_RESPONSE(&init_response);
     InitRoutingTbl(&init_response, rID);
 
-    pthread_t udp_thread_id;
-  	pthread_t timer_thread_id;
+    update_nbr_info(&init_response);
+    /* ----- END 2.d ----- */
 
-    if(pthread_create(&udp_thread_id, NULL, withdrawalFnLock, NULL)){
-      perror("Error creating thread for withdrawing money!");
+
+    // 3) Setup variables and begin multi-threading.
+    tim_update_interval = time(NULL);
+
+    if(pthread_create(&udp_thread_id, NULL, udp_thread, NULL)){
+      perror("Error creating thread for UDP monitoring!");
       return EXIT_FAILURE;
     }
 
-    if(pthread_create(&timer_thread_id, NULL, depositFnLock, NULL)){
-      perror("Error creating thread for depositing money!");
+    if(pthread_create(&timer_thread_id, NULL, timer_thread, NULL)){
+      perror("Error creating thread for timer handling!");
       return EXIT_FAILURE;
     }
 
@@ -156,10 +192,64 @@ What if multiple UDP messages come in at the same time?
   }
 
   void *udp_thread(void *arguments) {
+    /*
+    int recvfrom_len;
+    recvfrom_len = recvfrom(nefd, &pkt_update_in, update_size, 0, (struct sockaddr *) &recvaddr, &recvfrom_size);
+    // Lock
+    ntoh_pkt_RT_UPDATE (&pkt_update_in);
+    //tim_last_update = time(NULL);
+    // Unlock
+    */
+
+    return NULL;
+  }
+
+// Need neighbors and costs
+// timer for each neighbor
+
+
+  void *timer_thread(void *arguments) {
+    /*
+    int sendto_len, sendto_size;
+    sendto_size = sizeof(serveraddr);
+
+    while (1) {
+
+      if ((time(NULL) - tim_update_interval) >= UPDATE_INTERVAL) {
+        ConvertTabletoPkt(&pkt_update_out, rID);
+
+        sendto_len = sendto(nefd, &pkt_update_out, update_size, 0, (struct sockaddr *) &serveraddr, sendto_size);
+      }
+    }
+    */
+
+    return NULL;
+  }
+
+
+  void update_tim_last_update(int yourID) {
+    for (int i = 0; i < no_nbrs; i++) {
+      if (yourID == neighbors[i].nID) {
+        neighbors[i].tim_last_update = time(NULL);
+        return ;
+      }
+    }
 
     return ;
   }
-  void *timer_thread(void *arguments) {
 
+
+  void update_nbr_info(struct pkt_INIT_RESPONSE *InitResponse) {
+
+    for (int i = 0; i < InitResponse->no_nbr; i++) // changed from <=
+  	{
+  		int routerID = InitResponse->nbrcost[i].nbr;
+      neighbors[i].tim_last_update = time(NULL);
+      neighbors[i].nID = routerID;
+      neighbors[i].cost = InitResponse->nbrcost[i].cost;
+  	}
+
+    no_nbrs = InitResponse->no_nbr;
     return ;
+
   }
