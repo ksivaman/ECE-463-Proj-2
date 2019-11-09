@@ -10,13 +10,8 @@ int NumRoutes;
 ////////////////////////////////////////////////////////////////
 void InitRoutingTbl (struct pkt_INIT_RESPONSE *InitResponse, int myID){
 	/* ----- YOUR CODE HERE ----- */
-	// Set route to itself with cost 0
-
-	//InitResponse->nbrcost[InitResponse->no_nbr].nbr = myID;
-	//InitResponse->nbrcost[InitResponse->no_nbr].cost = 0;
-
 	// Initialize router table
-	for (int i = 0; i < InitResponse->no_nbr; i++) // changed from <=
+	for (int i = 0; i < InitResponse->no_nbr; i++)
 	{
 		int routerID = InitResponse->nbrcost[i].nbr;
 
@@ -44,9 +39,7 @@ void InitRoutingTbl (struct pkt_INIT_RESPONSE *InitResponse, int myID){
 ////////////////////////////////////////////////////////////////
 int UpdateRoutes(struct pkt_RT_UPDATE *RecvdUpdatePacket, int costToNbr, int myID){
 	/* ----- YOUR CODE HERE ----- */
-	//int route_number = NumRoutes;
 	struct route_entry routeEntry;
-	//int upd_id;
 	int routingTableChange = 0;
 
 
@@ -69,7 +62,7 @@ int UpdateRoutes(struct pkt_RT_UPDATE *RecvdUpdatePacket, int costToNbr, int myI
 			if (routingTable[routeEntry.dest_id].path_len == 0)
 				NumRoutes++;
 			routingTable[routeEntry.dest_id].dest_id = routeEntry.dest_id;
-			routingTable[routeEntry.dest_id].next_hop = routeEntry.next_hop;
+			routingTable[routeEntry.dest_id].next_hop = RecvdUpdatePacket->sender_id;
 			routingTable[routeEntry.dest_id].cost = routeEntry.cost + costToNbr;
 			routingTable[routeEntry.dest_id].path_len = routeEntry.path_len + 1;
 			routingTable[routeEntry.dest_id].path[0] = myID;
@@ -129,7 +122,11 @@ void PrintRoutes (FILE* Logfile, int myID){
 
 
 ////////////////////////////////////////////////////////////////
-void UninstallRoutesOnNbrDeath(int DeadNbr){
+void UninstallRoutesOnNbrDeath(int DeadNbr)
+{
 	/* ----- YOUR CODE HERE ----- */
-	return;
+	routingTable[DeadNbr].dest_id = 0;
+	routingTable[DeadNbr].next_hop = 0;
+	routingTable[DeadNbr].cost = 0;
+	routingTable[DeadNbr].path_len = 0;
 }

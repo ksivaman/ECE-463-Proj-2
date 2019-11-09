@@ -1,4 +1,4 @@
-#include "ne.h"
+ECE#include "ne.h"
 #include "router.h"
 #include <pthread.h>
 #include <time.h>
@@ -7,16 +7,20 @@
 /* ----- Function Declarations ----- */
 void *timer_thread(void *arguments);
 void *udp_thread(void *arguments);
-void update_tim_last_update(int yourID);
+int update_tim_last_update(int yourID);
 void update_nbr_info(struct pkt_INIT_RESPONSE *InitResponse);
+
+	FILE *fptr;
 
 
 /* ----- GLOBAL VARIABLES ----- */
-int nefd, rID, tim_update_interval;
+int nefd, rID, tim_update_interval, tim_converge_interval;
 socklen_t recvfrom_size;
 struct sockaddr_in serveraddr, recvaddr;
-struct pkt_RT_UPDATE pkt_update_in, pkt_update_out;
-int update_size = sizeof(pkt_update_in);
+//struct pkt_RT_UPDATE pkt_update_in, pkt_update_out;
+//int update_size = sizeof(pkt_update_in);
+pthread_mutex_t lock;
+int print_permission = 1;
 
 
 /* Create a struct to store the info of neighbors to the router.
@@ -171,9 +175,14 @@ int main (int argc, char *argv[])
 	update_nbr_info(&init_response);
 	/* ----- END 2.d ----- */
 
+	char filename[11] = "router0.log";
+	filename[6] = filename[6] + rID;
+	fptr = fopen(filename, "w");
 
 	// 3) Setup variables and begin multi-threading.
 	tim_update_interval = time(NULL);
+	tim_converge_interval = time(NULL);
+
 
 	if(pthread_create(&udp_thread_id, NULL, udp_thread, NULL)){
 		perror("Error creating thread for UDP monitoring!");
@@ -193,14 +202,35 @@ int main (int argc, char *argv[])
 
 
 void *udp_thread(void *arguments) {
-	/*
-	   int recvfrom_len;
-	   recvfrom_len = recvfrom(nefd, &pkt_update_in, update_size, 0, (struct sockaddr *) &recvaddr, &recvfrom_size);
-	// Lock
-	ntoh_pkt_RT_UPDATE (&pkt_update_in);
-	//tim_last_update = time(NULL);
-	// Unlock
-	*/
+
+	int recvfrom_len, nbr_cost, update_flag;
+	struct sockaddr_in recvaddr2;
+	socklen_t recvfrom_size2;
+	struct pkt_RT_UPDATE pkt_update_in2;
+	int update_size2 = sizeof(pkt_update_in2);
+	pthread_mutex_lock(&lock);
+	int nefd2 = nefd;
+	pthread_mutex_unlock(&lock);
+
+
+
+	while(1) {
+		recvfrom_len = recvfrom(nefd2, &pkt_update_in2, update_size2, 0, (struct sockaddr *) &recvaddr2, &recvfrom_size2);
+		pthread_mutex_lock(&lock);
+		ntoh_pkt_RT_UPDATE (&pkt_update_in2);
+		nbr_cost = update_tim_last_update(pkt_update_in2.sender_id);
+
+		update_flag = UpdateRoutes(&pkt_update_in2, nbr_cost, rID);
+		if (update_flag) {
+			PrintRoutes(fptr, rID);
+			tim_converge_interval = time(NULL);
+			print_permission = 1;
+		}
+		else {
+			//printf("No update.");
+		}
+		pthread_mutex_unlock(&lock);
+	}
 
 	return NULL;
 }
@@ -209,31 +239,75 @@ void *udp_thread(void *arguments) {
 void *timer_thread(void *arguments) {
 	// Need neighbors and costs
 	// timer for each neighbor
-	/*
-	   int sendto_len, sendto_size;
-	   sendto_size = sizeof(serveraddr);
+	struct pkt_RT_UPDATE pkt_update_out;
+	int update_size = sizeof(pkt_update_out);
 
-	   while (1) {
+/*
+	pthread_mutex_lock(&lock);
+	char filename[11] = "router0.log";
+	filename[6] = filename[6] + rID;
+	pthread_mutex_unlock(&lock);
+*/
 
-	   if ((time(NULL) - tim_update_interval) >= UPDATE_INTERVAL) {
-	   ConvertTabletoPkt(&pkt_update_out, rID);
+	//FILE *fptr = fopen(filename, "w");
+	int sendto_len, sendto_size;
+	sendto_size = sizeof(serveraddr);
 
-	   sendto_len = sendto(nefd, &pkt_update_out, update_size, 0, (struct sockaddr *) &serveraddr, sendto_size);
-	   }
-	   }
-	   */
+
+	while (1) {
+		// Update Interval Checking
+		pthread_mutex_lock(&lock);
+		if ((time(NULL) - tim_update_interval) >= UPDATE_INTERVAL) {
+			for (int i = 0; i < no_nbrs; i++) {
+				bzero(&pkt_update_out, sizeof(pkt_update_out));
+				ConvertTabletoPkt(&pkt_update_out, rID);
+				pkt_update_out.dest_id = neighbors[i].nID;
+				hton_pkt_RT_UPDATE (&pkt_update_out);
+				sendto_len = sendto(nefd, &pkt_update_out, update_size, 0, (struct sockaddr *) &serveraddr, sendto_size);
+			}
+			/*
+			bzero(&pkt_update_out, sizeof(pkt_update_out));
+			ConvertTabletoPkt(&pkt_update_out, rID);
+			hton_pkt_RT_UPDATE (&pkt_update_out);
+			sendto_len = sendto(nefd, &pkt_update_out, update_size, 0, (struct sockaddr *) &serveraddr, sendto_size);
+			tim_update_interval = time(NULL);
+			*/
+		}
+		pthread_mutex_unlock(&lock);
+		// Neighbor Death Checking
+		pthread_mutex_lock(&lock);
+		for (int i=0; i < no_nbrs; i++) {
+			if ((time(NULL) - neighbors[i].tim_last_update) > FAILURE_DETECTION) {
+				//ninstallRoutesOnNbrDeath(neighbors[i].nID);
+			}
+			// Have to remove from neighbor table and add locks
+		}
+		pthread_mutex_unlock(&lock);
+
+		pthread_mutex_lock(&lock);
+		// Convergence Checking
+		if (((time(NULL) - tim_converge_interval) > CONVERGE_TIMEOUT) && print_permission) {
+			PrintRoutes(fptr, rID);
+			printf("Done");
+			print_permission = 0;
+			// Add flag to not print
+		}
+		pthread_mutex_unlock(&lock);
+
+	}
+
 	return NULL;
 }
 
 
-void update_tim_last_update(int yourID) {
+int update_tim_last_update(int yourID) {
 	for (int i = 0; i < no_nbrs; i++) {
 		if (yourID == neighbors[i].nID) {
 			neighbors[i].tim_last_update = time(NULL);
-			return ;
+			return neighbors[i].cost;
 		}
 	}
-	return ;
+	return 0;
 }
 
 
