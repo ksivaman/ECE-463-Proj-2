@@ -1,7 +1,8 @@
-ECE#include "ne.h"
+#include "ne.h"
 #include "router.h"
 #include <pthread.h>
 #include <time.h>
+#include <math.h>
 
 
 /* ----- Function Declarations ----- */
@@ -179,9 +180,13 @@ int main (int argc, char *argv[])
 	filename[6] = filename[6] + rID;
 	fptr = fopen(filename, "w");
 
+	PrintRoutes(fptr, rID);
+
 	// 3) Setup variables and begin multi-threading.
 	tim_update_interval = time(NULL);
 	tim_converge_interval = time(NULL);
+
+	pthread_mutex_init(&lock, NULL);
 
 
 	if(pthread_create(&udp_thread_id, NULL, udp_thread, NULL)){
@@ -204,25 +209,23 @@ int main (int argc, char *argv[])
 void *udp_thread(void *arguments) {
 
 	int recvfrom_len, nbr_cost, update_flag;
-	struct sockaddr_in recvaddr2;
-	socklen_t recvfrom_size2;
-	struct pkt_RT_UPDATE pkt_update_in2;
-	int update_size2 = sizeof(pkt_update_in2);
+	struct sockaddr_in recvaddr_local;
+	socklen_t recvfrom_size_local;
+	struct pkt_RT_UPDATE pkt_update_in_local;
+	int update_size_local = sizeof(pkt_update_in_local);
 	pthread_mutex_lock(&lock);
-	int nefd2 = nefd;
+	int nefd_local = nefd;
 	pthread_mutex_unlock(&lock);
 
-
-
 	while(1) {
-		recvfrom_len = recvfrom(nefd2, &pkt_update_in2, update_size2, 0, (struct sockaddr *) &recvaddr2, &recvfrom_size2);
+		recvfrom_len = recvfrom(nefd_local, &pkt_update_in_local, update_size_local, 0, (struct sockaddr *) &recvaddr_local, &recvfrom_size_local);
 		pthread_mutex_lock(&lock);
-		ntoh_pkt_RT_UPDATE (&pkt_update_in2);
-		nbr_cost = update_tim_last_update(pkt_update_in2.sender_id);
-
-		update_flag = UpdateRoutes(&pkt_update_in2, nbr_cost, rID);
+		ntoh_pkt_RT_UPDATE (&pkt_update_in_local);
+		nbr_cost = update_tim_last_update(pkt_update_in_local.sender_id);
+		update_flag = UpdateRoutes(&pkt_update_in_local, nbr_cost, rID);
 		if (update_flag) {
 			PrintRoutes(fptr, rID);
+			fflush(fptr);
 			tim_converge_interval = time(NULL);
 			print_permission = 1;
 		}
@@ -264,16 +267,11 @@ void *timer_thread(void *arguments) {
 				pkt_update_out.dest_id = neighbors[i].nID;
 				hton_pkt_RT_UPDATE (&pkt_update_out);
 				sendto_len = sendto(nefd, &pkt_update_out, update_size, 0, (struct sockaddr *) &serveraddr, sendto_size);
+				tim_update_interval = time(NULL);
 			}
-			/*
-			bzero(&pkt_update_out, sizeof(pkt_update_out));
-			ConvertTabletoPkt(&pkt_update_out, rID);
-			hton_pkt_RT_UPDATE (&pkt_update_out);
-			sendto_len = sendto(nefd, &pkt_update_out, update_size, 0, (struct sockaddr *) &serveraddr, sendto_size);
-			tim_update_interval = time(NULL);
-			*/
 		}
 		pthread_mutex_unlock(&lock);
+
 		// Neighbor Death Checking
 		pthread_mutex_lock(&lock);
 		for (int i=0; i < no_nbrs; i++) {
@@ -287,7 +285,11 @@ void *timer_thread(void *arguments) {
 		pthread_mutex_lock(&lock);
 		// Convergence Checking
 		if (((time(NULL) - tim_converge_interval) > CONVERGE_TIMEOUT) && print_permission) {
-			PrintRoutes(fptr, rID);
+			printf("Converged\n");
+			//PrintRoutes(fptr, rID);
+			//fflush(fptr);
+			fprintf(fptr, "%d:Converged\n", (int) floor(time(NULL) - tim_converge_interval));
+			fflush(fptr);
 			printf("Done");
 			print_permission = 0;
 			// Add flag to not print

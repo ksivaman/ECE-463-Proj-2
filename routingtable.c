@@ -41,7 +41,7 @@ int UpdateRoutes(struct pkt_RT_UPDATE *RecvdUpdatePacket, int costToNbr, int myI
 	/* ----- YOUR CODE HERE ----- */
 	struct route_entry routeEntry;
 	int routingTableChange = 0;
-
+	int check1, check2, check3, check4;
 
 	for (int i = 0; i < RecvdUpdatePacket->no_routes; i++)
 	{
@@ -61,14 +61,26 @@ int UpdateRoutes(struct pkt_RT_UPDATE *RecvdUpdatePacket, int costToNbr, int myI
 		{
 			if (routingTable[routeEntry.dest_id].path_len == 0)
 				NumRoutes++;
+
+			check1 = routingTable[routeEntry.dest_id].dest_id - routeEntry.dest_id;
 			routingTable[routeEntry.dest_id].dest_id = routeEntry.dest_id;
+
+			check2 = routingTable[routeEntry.dest_id].next_hop - RecvdUpdatePacket->sender_id;
 			routingTable[routeEntry.dest_id].next_hop = RecvdUpdatePacket->sender_id;
+
+			check3 = routingTable[routeEntry.dest_id].cost - (routeEntry.cost + costToNbr);
 			routingTable[routeEntry.dest_id].cost = routeEntry.cost + costToNbr;
+
+			check4 = routingTable[routeEntry.dest_id].path_len - (routeEntry.path_len + 1);
 			routingTable[routeEntry.dest_id].path_len = routeEntry.path_len + 1;
+
 			routingTable[routeEntry.dest_id].path[0] = myID;
 			for (int j = 0; j < routeEntry.path_len; j++)
 				routingTable[routeEntry.dest_id].path[j + 1] = routeEntry.path[j];
-			routingTableChange = 1;
+
+			if (check1 || check2 || check3 || check4) {
+				routingTableChange = 1;
+			}
 		}
 	}
 
