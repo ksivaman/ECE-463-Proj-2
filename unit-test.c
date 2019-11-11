@@ -3,7 +3,7 @@
    *
    *  File Name: unit-test.c
    *
-   *  Purpose: Contains Unit test cases to test the functions in routingtable.c
+   *  Purpose: Contains Unit test cases to test the functions in routingtable.c 
    *
    */
 
@@ -25,13 +25,14 @@ void ASSERT(char *file,const char *func,int line,int x,char *y) {
 int checkPath(struct pkt_RT_UPDATE* updpkt,int dest, int *correctPath){
 	int i,nbr;
 	nbr=999;
-    for(i=0; i<updpkt->no_routes; i++) {
+	MyAssert(updpkt->no_routes <= MAX_ROUTERS,"wrong no_routes");
+    for(i=0; i < updpkt->no_routes; i++) {
         if(updpkt->route[i].dest_id == dest) {
            nbr = i;
         }
     }
-
-    for (i=0;i<updpkt->route[nbr].path_len;i++){
+	MyAssert(updpkt->route[nbr].path_len <= MAX_PATH_LEN,"wrong path_len");
+    for (i=0; i < updpkt->route[nbr].path_len;i++){		
 
     	if(correctPath[i]!=updpkt->route[nbr].path[i])
     		return WrongPath;
@@ -48,11 +49,13 @@ void printPacket( struct pkt_RT_UPDATE* updpkt){
 
 
 	int i,j;
+	MyAssert(updpkt->no_routes <= MAX_ROUTERS,"wrong no_routes");
 	for(i = 0; i < updpkt->no_routes; i++){
 		printf("Route[%d]:\n",i);
 		printf("dest id: %d\nnext hop: %d\ncost: %d\npath len: %d\n",updpkt->route[i].dest_id, updpkt->route[i].next_hop,updpkt->route[i].cost,updpkt->route[i].path_len);
 		//memcpy(UpdatePacketToSend->route[i].path, routingTable[i].path, MAX_ROUTERS);
 		printf("path: ");
+		MyAssert(updpkt->route[i].path_len <= MAX_PATH_LEN,"wrong path_len");
 		for (j=0;j<updpkt->route[i].path_len-1;j++){
 
 			printf("R%d ->",updpkt->route[i].path[j]);
@@ -74,7 +77,7 @@ int TestInitRT() {
     nbrs.nbrcost[0].cost = 4;
     nbrs.nbrcost[1].nbr = 2;
     nbrs.nbrcost[1].cost = 3;
-
+    
     InitRoutingTbl (&nbrs, MyRouterId);
     ConvertTabletoPkt(&resultpkt, MyRouterId);
     printPacket(&resultpkt);
@@ -100,13 +103,13 @@ int TestNewRoute() {
     int i;
     int nbr = 999;
 
-    struct pkt_RT_UPDATE updpkt, resultpkt;
-
+    struct pkt_RT_UPDATE updpkt, resultpkt; 
+ 
     updpkt.sender_id = 1;
     updpkt.dest_id = 0;
     updpkt.no_routes = 1;
     updpkt.route[0].dest_id = 4;
-    updpkt.route[0].next_hop = 1;
+    updpkt.route[0].next_hop = 4;
     updpkt.route[0].cost = 5;
     updpkt.route[0].path_len=2;
     updpkt.route[0].path[0]=1;
@@ -117,7 +120,7 @@ int TestNewRoute() {
     printPacket(&resultpkt);
     MyAssert(resultpkt.no_routes==4,"Incorrect number of routes after adding a new destination");
     for(i=0; i<resultpkt.no_routes; i++) {
-        if(resultpkt.route[i].dest_id == 4) {
+        if(resultpkt.route[i].dest_id == 4) {   
            nbr = i;
         }
     }
@@ -136,13 +139,13 @@ int TestDVUpdate() {
 
     int i;
     int nbr = 999;
-    struct pkt_RT_UPDATE updpkt, resultpkt;
+    struct pkt_RT_UPDATE updpkt, resultpkt;   
 
     updpkt.sender_id = 2;
     updpkt.dest_id = 0;
     updpkt.no_routes = 1;
     updpkt.route[0].dest_id = 4;
-    updpkt.route[0].next_hop = 2;
+    updpkt.route[0].next_hop = 8;
     updpkt.route[0].cost = 2;
     updpkt.route[0].path_len=3;
     updpkt.route[0].path[0]=2;
@@ -170,13 +173,13 @@ int TestForcedUpd() {
 
     int i;
     int nbr = 999;
-    struct pkt_RT_UPDATE updpkt, resultpkt;
+    struct pkt_RT_UPDATE updpkt, resultpkt;   
 
     updpkt.sender_id = 2;
     updpkt.dest_id = 0;
     updpkt.no_routes = 1;
     updpkt.route[0].dest_id = 4;
-    updpkt.route[0].next_hop = 2;
+    updpkt.route[0].next_hop = 10;
     updpkt.route[0].cost = 3;
     updpkt.route[0].path_len=3;
     updpkt.route[0].path[0]=2;
@@ -204,18 +207,19 @@ int TestSplitHorizon() {
 
     int i;
     int nbr = 999;
-    struct pkt_RT_UPDATE updpkt, resultpkt;
+    struct pkt_RT_UPDATE updpkt, resultpkt;   
 
     updpkt.sender_id = 2;
     updpkt.dest_id = 0;
     updpkt.no_routes = 1;
     updpkt.route[0].dest_id = 1;
-    updpkt.route[0].next_hop = 0;
+    updpkt.route[0].next_hop = 20;
     updpkt.route[0].cost = 0;
-    updpkt.route[0].path_len=3;
+    updpkt.route[0].path_len=4;
     updpkt.route[0].path[0]=2;
     updpkt.route[0].path[1]=20;
     updpkt.route[0].path[2]=0;
+    updpkt.route[0].path[3]=1;
 
     UpdateRoutes(&updpkt, nbrs.nbrcost[1].cost, MyRouterId);
     ConvertTabletoPkt(&resultpkt, MyRouterId);
@@ -245,10 +249,10 @@ int main (int argc, char *argv[])
     printf("Test Case 1: PASS Initialized routing table\n");
 
 //Testing New Route Update
-
+    
     TestNewRoute();
     printf("Test Case 2: PASS Added new route to routing table\n");
-
+   
 //Testing Distance Vector Calculation
 
     TestDVUpdate();

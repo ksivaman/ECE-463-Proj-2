@@ -137,8 +137,38 @@ void PrintRoutes (FILE* Logfile, int myID){
 void UninstallRoutesOnNbrDeath(int DeadNbr)
 {
 	/* ----- YOUR CODE HERE ----- */
+	for (int i = 0; i < MAX_ROUTERS; i++)
+	{
+		if (i == DeadNbr)
+		{
+			routingTable[DeadNbr].dest_id = 0;
+			routingTable[DeadNbr].next_hop = 0;
+			routingTable[DeadNbr].cost = 0;
+			routingTable[DeadNbr].path_len = 0;
+			continue;
+		}
+		for (int j = 0; j < routingTable[i].path_len; j++)
+		{
+			if (routingTable[i].path[j] == DeadNbr)
+			{
+				routingTable[i].dest_id = 0;
+				routingTable[i].next_hop = 0;
+				routingTable[i].cost = 0;
+				routingTable[i].path_len = 0;
+				break;
+			}
+		}
+	}
+}
+
+
+/*void UninstallRoutesOnNbrDeath(int DeadNbr)
+{
 	routingTable[DeadNbr].dest_id = 0;
 	routingTable[DeadNbr].next_hop = 0;
 	routingTable[DeadNbr].cost = 0;
 	routingTable[DeadNbr].path_len = 0;
-}
+	for (int i = 0; i < MAX_ROUTERS; i++) {
+		routingTable[DeadNbr].path[i] = 0;
+	}
+}*/

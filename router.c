@@ -276,7 +276,7 @@ void *timer_thread(void *arguments) {
 		pthread_mutex_lock(&lock);
 		for (int i=0; i < no_nbrs; i++) {
 			if ((time(NULL) - neighbors[i].tim_last_update) > FAILURE_DETECTION) {
-				//ninstallRoutesOnNbrDeath(neighbors[i].nID);
+				UninstallRoutesOnNbrDeath(neighbors[i].nID);
 			}
 			// Have to remove from neighbor table and add locks
 		}
@@ -288,7 +288,7 @@ void *timer_thread(void *arguments) {
 			printf("Converged\n");
 			//PrintRoutes(fptr, rID);
 			//fflush(fptr);
-			fprintf(fptr, "%d:Converged\n", (int) floor(time(NULL) - tim_converge_interval));
+			fprintf(fptr, "%d:Converged\n\n", (int) floor(time(NULL) - tim_converge_interval));
 			fflush(fptr);
 			printf("Done");
 			print_permission = 0;
