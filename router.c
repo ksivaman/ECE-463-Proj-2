@@ -214,6 +214,7 @@ void *udp_thread(void *arguments) {
 	pthread_mutex_lock(&lock);
 	int nefd_local = nefd;
 	pthread_mutex_unlock(&lock);
+	// recvfrom_size_local = sizeof )>>>
 
 	while(1) {
 		recvfrom(nefd_local, &pkt_update_in_local, update_size_local, 0, (struct sockaddr *) &recvaddr_local, &recvfrom_size_local);
@@ -265,6 +266,8 @@ void *timer_thread(void *arguments) {
 		for (int i=0; i < no_nbrs; i++) {
 			if ((time(NULL) - neighbors[i].tim_last_update) > FAILURE_DETECTION) {
 				UninstallRoutesOnNbrDeath(neighbors[i].nID);
+				//PrintRoutes(fptr, rID);
+				//printf("Uninstalling %d\n", i);
 			}
 			// Have to remove from neighbor table and add locks
 		}
@@ -275,7 +278,7 @@ void *timer_thread(void *arguments) {
 		if (((time(NULL) - tim_converge_interval) > CONVERGE_TIMEOUT) && print_permission) {
 			printf("Converged\n");
 			time_t curr = time(NULL);
-			fprintf(fptr, "%d:Converged\n", (int) floor(time(NULL) - tim_converge_interval));
+			fprintf(fptr, "%d:Converged\n", (int) time(NULL) - tim_converge_interval);
 			fflush(fptr);
 			printf("Done");
 			print_permission = 0;
@@ -292,7 +295,6 @@ int update_tim_last_update(int yourID) {
 	for (int i = 0; i < no_nbrs; i++) {
 		if (yourID == neighbors[i].nID) {
 			neighbors[i].tim_last_update = time(NULL);
-			//printf("---%d, %d---\n", yourID, (int) time(NULL));
 			return neighbors[i].cost;
 		}
 	}

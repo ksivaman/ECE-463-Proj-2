@@ -22,7 +22,10 @@ Convergence after Killing Router:
 Convergence after RevivingRouter:
 
 
+
+
 router0.log, changes between two versions of the file
+hashed vs unhashed routingTable
 time for router1 and router2 are 6 instead of 5
 
 reviving & failure
