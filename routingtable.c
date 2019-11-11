@@ -5,32 +5,31 @@
 /* ----- GLOBAL VARIABLES ----- */
 struct route_entry routingTable[MAX_ROUTERS];
 int NumRoutes;
+int find_router(int);
 
 
 ////////////////////////////////////////////////////////////////
 void InitRoutingTbl (struct pkt_INIT_RESPONSE *InitResponse, int myID){
 	/* ----- YOUR CODE HERE ----- */
 	// Initialize router table
+	routingTable[NumRoutes].dest_id = myID;
+	routingTable[NumRoutes].next_hop = myID;
+	routingTable[NumRoutes].cost = 0;
+	routingTable[NumRoutes].path_len = 1;
+	routingTable[NumRoutes].path[0] = myID;
+	NumRoutes += 1;
+
 	for (int i = 0; i < InitResponse->no_nbr; i++)
 	{
-		int routerID = InitResponse->nbrcost[i].nbr;
+		routingTable[NumRoutes].dest_id = InitResponse->nbrcost[i].nbr;
+		routingTable[NumRoutes].next_hop = InitResponse->nbrcost[i].nbr;
+		routingTable[NumRoutes].cost = InitResponse->nbrcost[i].cost;
+		routingTable[NumRoutes].path_len = 2;
+		routingTable[NumRoutes].path[0] = myID;
+		routingTable[NumRoutes].path[1] = InitResponse->nbrcost[i].nbr;
 
-		routingTable[routerID].dest_id = InitResponse->nbrcost[i].nbr;
-		routingTable[routerID].next_hop = InitResponse->nbrcost[i].nbr;
-		routingTable[routerID].cost = InitResponse->nbrcost[i].cost;
-		routingTable[routerID].path_len = 2;
-		routingTable[routerID].path[0] = myID;
-		routingTable[routerID].path[1] = InitResponse->nbrcost[i].nbr;
+		NumRoutes += 1;
 	}
-
-	routingTable[myID].dest_id = myID;
-	routingTable[myID].next_hop = myID;
-	routingTable[myID].cost = 0;
-	routingTable[myID].path_len = 1;
-	routingTable[myID].path[0] = myID;
-
-	// Update NumRoutes
-	NumRoutes = InitResponse->no_nbr + 1;
 
 	return;
 }
@@ -42,10 +41,13 @@ int UpdateRoutes(struct pkt_RT_UPDATE *RecvdUpdatePacket, int costToNbr, int myI
 	struct route_entry routeEntry;
 	int routingTableChange = 0;
 	int check1, check2, check3, check4;
+	int rID;
 
 	for (int i = 0; i < RecvdUpdatePacket->no_routes; i++)
 	{
 		routeEntry = RecvdUpdatePacket->route[i];
+
+		rID = find_router(routeEntry.dest_id);
 
 		// Split Horizon
 		int split = 0;
@@ -57,26 +59,26 @@ int UpdateRoutes(struct pkt_RT_UPDATE *RecvdUpdatePacket, int costToNbr, int myI
 
 		if (routeEntry.path_len == 0 || split)
 			continue;
-		if ((RecvdUpdatePacket->sender_id == routingTable[routeEntry.dest_id].next_hop) || (routeEntry.cost + costToNbr < routingTable[routeEntry.dest_id].cost) || (routingTable[routeEntry.dest_id].path_len == 0))
+		if ((RecvdUpdatePacket->sender_id == routingTable[rID].next_hop) || (routeEntry.cost + costToNbr < routingTable[rID].cost) || (routingTable[rID].path_len == 0))
 		{
-			if (routingTable[routeEntry.dest_id].path_len == 0)
+			if (routingTable[rID].path_len == 0)
 				NumRoutes++;
 
-			check1 = routingTable[routeEntry.dest_id].dest_id - routeEntry.dest_id;
-			routingTable[routeEntry.dest_id].dest_id = routeEntry.dest_id;
+			check1 = routingTable[rID].dest_id - routeEntry.dest_id;
+			routingTable[rID].dest_id = routeEntry.dest_id;
 
-			check2 = routingTable[routeEntry.dest_id].next_hop - RecvdUpdatePacket->sender_id;
-			routingTable[routeEntry.dest_id].next_hop = RecvdUpdatePacket->sender_id;
+			check2 = routingTable[rID].next_hop - RecvdUpdatePacket->sender_id;
+			routingTable[rID].next_hop = RecvdUpdatePacket->sender_id;
 
-			check3 = routingTable[routeEntry.dest_id].cost - (routeEntry.cost + costToNbr);
-			routingTable[routeEntry.dest_id].cost = routeEntry.cost + costToNbr;
+			check3 = routingTable[rID].cost - (routeEntry.cost + costToNbr);
+			routingTable[rID].cost = routeEntry.cost + costToNbr;
 
-			check4 = routingTable[routeEntry.dest_id].path_len - (routeEntry.path_len + 1);
-			routingTable[routeEntry.dest_id].path_len = routeEntry.path_len + 1;
+			check4 = routingTable[rID].path_len - (routeEntry.path_len + 1);
+			routingTable[rID].path_len = routeEntry.path_len + 1;
 
-			routingTable[routeEntry.dest_id].path[0] = myID;
+			routingTable[rID].path[0] = myID;
 			for (int j = 0; j < routeEntry.path_len; j++)
-				routingTable[routeEntry.dest_id].path[j + 1] = routeEntry.path[j];
+				routingTable[rID].path[j + 1] = routeEntry.path[j];
 
 			if (check1 || check2 || check3 || check4) {
 				routingTableChange = 1;
@@ -159,6 +161,16 @@ void UninstallRoutesOnNbrDeath(int DeadNbr)
 			}
 		}
 	}
+}
+
+int find_router(int rID) {
+	for (int i = 0; i < NumRoutes; i++) {
+		if (routingTable[i].dest_id == rID) {
+			return i;
+		}
+	}
+	return NumRoutes;
+
 }
 
 

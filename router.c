@@ -18,8 +18,6 @@ void update_nbr_info(struct pkt_INIT_RESPONSE *InitResponse);
 int nefd, rID, tim_update_interval, tim_converge_interval;
 socklen_t recvfrom_size;
 struct sockaddr_in serveraddr, recvaddr;
-//struct pkt_RT_UPDATE pkt_update_in, pkt_update_out;
-//int update_size = sizeof(pkt_update_in);
 pthread_mutex_t lock;
 int print_permission = 1;
 
@@ -119,7 +117,7 @@ int main (int argc, char *argv[])
 	/* ----- Declare Variables ----- */
 	int ne_udp_port, r_udp_port;
 	char *hostname;
-	int sendto_len, recvfrom_len, sendto_size, pkt_size;
+	int sendto_size, pkt_size;
 	struct hostent *hp;
 	struct pkt_INIT_RESPONSE init_response;
 	struct pkt_INIT_REQUEST init_request;
@@ -162,13 +160,13 @@ int main (int argc, char *argv[])
 	// 2.c) Contact NE.
 	sendto_size = sizeof(serveraddr);
 	pkt_size = sizeof(init_request);
-	sendto_len = sendto(nefd, &init_request, pkt_size, 0, (struct sockaddr *) &serveraddr, sendto_size);
+	sendto(nefd, &init_request, pkt_size, 0, (struct sockaddr *) &serveraddr, sendto_size);
 	/* ----- END 2.c ----- */
 
 
 	// 2.d) Receive update packet from NE.  Interpret response.
 	pkt_size = sizeof(init_response);
-	recvfrom_len = recvfrom(nefd, &init_response, pkt_size, 0, (struct sockaddr *) &recvaddr, &recvfrom_size);
+	recvfrom(nefd, &init_response, pkt_size, 0, (struct sockaddr *) &recvaddr, &recvfrom_size);
 
 	ntoh_pkt_INIT_RESPONSE(&init_response);
 	InitRoutingTbl(&init_response, rID);
@@ -208,7 +206,7 @@ int main (int argc, char *argv[])
 
 void *udp_thread(void *arguments) {
 
-	int recvfrom_len, nbr_cost, update_flag;
+	int nbr_cost, update_flag;
 	struct sockaddr_in recvaddr_local;
 	socklen_t recvfrom_size_local;
 	struct pkt_RT_UPDATE pkt_update_in_local;
@@ -218,20 +216,19 @@ void *udp_thread(void *arguments) {
 	pthread_mutex_unlock(&lock);
 
 	while(1) {
-		recvfrom_len = recvfrom(nefd_local, &pkt_update_in_local, update_size_local, 0, (struct sockaddr *) &recvaddr_local, &recvfrom_size_local);
+		recvfrom(nefd_local, &pkt_update_in_local, update_size_local, 0, (struct sockaddr *) &recvaddr_local, &recvfrom_size_local);
 		pthread_mutex_lock(&lock);
 		ntoh_pkt_RT_UPDATE (&pkt_update_in_local);
 		nbr_cost = update_tim_last_update(pkt_update_in_local.sender_id);
 		update_flag = UpdateRoutes(&pkt_update_in_local, nbr_cost, rID);
 		if (update_flag) {
+			//printf("--%d--\n", pkt_update_in_local.no_routes);
 			PrintRoutes(fptr, rID);
 			fflush(fptr);
 			tim_converge_interval = time(NULL);
 			print_permission = 1;
 		}
-		else {
-			//printf("No update.");
-		}
+
 		pthread_mutex_unlock(&lock);
 	}
 
@@ -244,20 +241,11 @@ void *timer_thread(void *arguments) {
 	// timer for each neighbor
 	struct pkt_RT_UPDATE pkt_update_out;
 	int update_size = sizeof(pkt_update_out);
-
-/*
-	pthread_mutex_lock(&lock);
-	char filename[11] = "router0.log";
-	filename[6] = filename[6] + rID;
-	pthread_mutex_unlock(&lock);
-*/
-
-	//FILE *fptr = fopen(filename, "w");
-	int sendto_len, sendto_size;
+	int sendto_size;
 	sendto_size = sizeof(serveraddr);
 
-
 	while (1) {
+
 		// Update Interval Checking
 		pthread_mutex_lock(&lock);
 		if ((time(NULL) - tim_update_interval) >= UPDATE_INTERVAL) {
@@ -266,7 +254,7 @@ void *timer_thread(void *arguments) {
 				ConvertTabletoPkt(&pkt_update_out, rID);
 				pkt_update_out.dest_id = neighbors[i].nID;
 				hton_pkt_RT_UPDATE (&pkt_update_out);
-				sendto_len = sendto(nefd, &pkt_update_out, update_size, 0, (struct sockaddr *) &serveraddr, sendto_size);
+				sendto(nefd, &pkt_update_out, update_size, 0, (struct sockaddr *) &serveraddr, sendto_size);
 				tim_update_interval = time(NULL);
 			}
 		}
@@ -286,13 +274,11 @@ void *timer_thread(void *arguments) {
 		// Convergence Checking
 		if (((time(NULL) - tim_converge_interval) > CONVERGE_TIMEOUT) && print_permission) {
 			printf("Converged\n");
-			//PrintRoutes(fptr, rID);
-			//fflush(fptr);
-			fprintf(fptr, "%d:Converged\n\n", (int) floor(time(NULL) - tim_converge_interval));
+			time_t curr = time(NULL);
+			fprintf(fptr, "%d:Converged\n", (int) floor(time(NULL) - tim_converge_interval));
 			fflush(fptr);
 			printf("Done");
 			print_permission = 0;
-			// Add flag to not print
 		}
 		pthread_mutex_unlock(&lock);
 
@@ -306,6 +292,7 @@ int update_tim_last_update(int yourID) {
 	for (int i = 0; i < no_nbrs; i++) {
 		if (yourID == neighbors[i].nID) {
 			neighbors[i].tim_last_update = time(NULL);
+			//printf("---%d, %d---\n", yourID, (int) time(NULL));
 			return neighbors[i].cost;
 		}
 	}
