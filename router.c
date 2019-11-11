@@ -214,7 +214,7 @@ void *udp_thread(void *arguments) {
 	pthread_mutex_lock(&lock);
 	int nefd_local = nefd;
 	pthread_mutex_unlock(&lock);
-	// recvfrom_size_local = sizeof )>>>
+	recvfrom_size_local = sizeof(recvaddr_local);
 
 	while(1) {
 		recvfrom(nefd_local, &pkt_update_in_local, update_size_local, 0, (struct sockaddr *) &recvaddr_local, &recvfrom_size_local);
