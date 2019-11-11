@@ -20,3 +20,12 @@ Indicate Topology:
 Indicate Router to kill/revive:
 Convergence after Killing Router:
 Convergence after RevivingRouter:
+
+
+router0.log, changes between two versions of the file
+time for router1 and router2 are 6 instead of 5
+
+reviving & failure
+
+potential valgrind errors, and how to test
+porting code over to ECEgrid has issues (floor, std=c99, etc.)
