@@ -63,24 +63,31 @@ int UpdateRoutes(struct pkt_RT_UPDATE *RecvdUpdatePacket, int costToNbr, int myI
 				NumRoutes++;
 
 			check1 = routingTable[routeEntry.dest_id].dest_id - routeEntry.dest_id;
-			//printf("---%d-#1--", check1);
 			routingTable[routeEntry.dest_id].dest_id = routeEntry.dest_id;
 
 			check2 = routingTable[routeEntry.dest_id].next_hop - RecvdUpdatePacket->sender_id;
-			//printf("---%d-#2--", check2);
 			routingTable[routeEntry.dest_id].next_hop = RecvdUpdatePacket->sender_id;
 
-			check3 = routingTable[routeEntry.dest_id].cost - (routeEntry.cost + costToNbr);
-			//printf("---%d-#3--", check3);
-			routingTable[routeEntry.dest_id].cost = routeEntry.cost + costToNbr;
+			if (routeEntry.cost + costToNbr < INFINITY)
+			{
+				check3 = routingTable[routeEntry.dest_id].cost - (routeEntry.cost + costToNbr);
+				routingTable[routeEntry.dest_id].cost = routeEntry.cost + costToNbr;
+			}
+			else
+			{
+				check3 = (routingTable[routeEntry.dest_id].cost != INFINITY);
+				routingTable[routeEntry.dest_id].cost = INFINITY;
+			}
 
 			check4 = routingTable[routeEntry.dest_id].path_len - (routeEntry.path_len + 1);
-			//printf("---%d-#4--", check4);
 			routingTable[routeEntry.dest_id].path_len = routeEntry.path_len + 1;
 
-			routingTable[routeEntry.dest_id].path[0] = myID;
-			for (int j = 0; j < routeEntry.path_len; j++)
-				routingTable[routeEntry.dest_id].path[j + 1] = routeEntry.path[j];
+			if (routeEntry.cost < 999) {
+				routingTable[routeEntry.dest_id].path[0] = myID;
+				for (int j = 0; j < routeEntry.path_len; j++) {
+					routingTable[routeEntry.dest_id].path[j + 1] = routeEntry.path[j];
+				}
+			}
 
 			if (check1 || check2 || check3 || check4) {
 				routingTableChange = 1;
@@ -145,36 +152,16 @@ void UninstallRoutesOnNbrDeath(int DeadNbr)
 	{
 		if (routingTable[i].dest_id == DeadNbr)
 		{
-			//routingTable[i].dest_id = 0;
-			//routingTable[i].next_hop = 0;
 			routingTable[i].cost = INFINITY;
-			//routingTable[i].path_len = 0;
-			//NumRoutes--;
 			continue;
 		}
 		for (int j = 0; j < routingTable[i].path_len; j++)
 		{
 			if (routingTable[i].path[j] == DeadNbr)
 			{
-				//routingTable[i].dest_id = 0;
-				//routingTable[i].next_hop = 0;
 				routingTable[i].cost = INFINITY;
-				//routingTable[i].path_len = 0;
-				//NumRoutes--;
 				break;
 			}
 		}
 	}
 }
-
-
-/*void UninstallRoutesOnNbrDeath(int DeadNbr)
-{
-	routingTable[DeadNbr].dest_id = 0;
-	routingTable[DeadNbr].next_hop = 0;
-	routingTable[DeadNbr].cost = 0;
-	routingTable[DeadNbr].path_len = 0;
-	for (int i = 0; i < MAX_ROUTERS; i++) {
-		routingTable[DeadNbr].path[i] = 0;
-	}
-}*/

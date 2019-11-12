@@ -277,8 +277,9 @@ void *timer_thread(void *arguments) {
 		// Convergence Checking
 		if (((time(NULL) - tim_converge_interval) > CONVERGE_TIMEOUT) && print_permission) {
 			printf("Converged\n");
-			time_t curr = time(NULL);
+			//time_t curr = time(NULL);
 			fprintf(fptr, "%d:Converged\n", (int) time(NULL) - tim_converge_interval);
+			PrintRoutes(fptr, rID);
 			fflush(fptr);
 			printf("Done");
 			print_permission = 0;
