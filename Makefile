@@ -1,5 +1,5 @@
-CFLAGS = -g -Wall -lpthread 
-CC = gcc -std=c99
+CFLAGS = -g -Wall -lpthread
+CC = gcc
 
 # change based on type of router to be built
 # value can be either DISTVECTOR or PATHVECTOR
@@ -21,7 +21,7 @@ endian.o   :   ne.h endian.c
 
 routingtable.o   :   ne.h routingtable.c
 	$(CC) $(CFLAGS) -D $(ROUTERMODE) -c routingtable.c
-
+	
 router  :   endian.o routingtable.o router.c
 	$(CC) $(CFLAGS) -D $(ROUTERMODE) -D DEBUG=$(DEBUG) endian.o routingtable.o router.c -o router -lnsl $(SOCKETLIB)
 
@@ -32,4 +32,3 @@ clean :
 	rm -f *.o
 	rm -f router
 	rm -f unit-test
-	rm -f *.log

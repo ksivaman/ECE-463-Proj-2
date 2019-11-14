@@ -175,7 +175,7 @@ int main (int argc, char *argv[])
 	update_nbr_info(&init_response);
 	/* ----- END 2.d ----- */
 
-	char filename[11] = "router0.log";
+	char filename[12] = "router0.log\0";
 	filename[6] = (char) (filename[6] + rID);
 	fptr = fopen(filename, "w");
 
@@ -247,7 +247,8 @@ void *timer_thread(void *arguments) {
 	int sendto_size;
 	sendto_size = sizeof(serveraddr);
 	int DeadRouters[MAX_ROUTERS];
-	for (int i = 0; i < MAX_ROUTERS; i++)
+	int i;
+	for (i = 0; i < MAX_ROUTERS; i++)
 		DeadRouters[i] = 0;
 
 	while (1) {
@@ -255,7 +256,7 @@ void *timer_thread(void *arguments) {
 		// Update Interval Checking
 		pthread_mutex_lock(&lock);
 		if ((time(NULL) - tim_update_interval) >= UPDATE_INTERVAL) {
-			for (int i = 0; i < no_nbrs; i++) {
+			for (i = 0; i < no_nbrs; i++) {
 				bzero(&pkt_update_out, sizeof(pkt_update_out));
 				ConvertTabletoPkt(&pkt_update_out, rID);
 				pkt_update_out.dest_id = neighbors[i].nID;
@@ -268,7 +269,7 @@ void *timer_thread(void *arguments) {
 
 		// Neighbor Death Checking
 		pthread_mutex_lock(&lock);
-		for (int i=0; i < no_nbrs; i++) {
+		for (i=0; i < no_nbrs; i++) {
 			if ((time(NULL) - neighbors[i].tim_last_update) > FAILURE_DETECTION) {
 				UninstallRoutesOnNbrDeath(neighbors[i].nID);
 				if (DeadRouters[i] == 0)
@@ -302,7 +303,8 @@ void *timer_thread(void *arguments) {
 
 
 int update_tim_last_update(int yourID) {
-	for (int i = 0; i < no_nbrs; i++) {
+	int i;
+	for (i = 0; i < no_nbrs; i++) {
 		if (yourID == neighbors[i].nID) {
 			neighbors[i].tim_last_update = time(NULL);
 			return neighbors[i].cost;
@@ -313,7 +315,8 @@ int update_tim_last_update(int yourID) {
 
 
 void update_nbr_info(struct pkt_INIT_RESPONSE *InitResponse) {
-	for (int i = 0; i < InitResponse->no_nbr; i++) {
+	int i;
+	for (i = 0; i < InitResponse->no_nbr; i++) {
 		int routerID = InitResponse->nbrcost[i].nbr;
 		neighbors[i].tim_last_update = time(NULL);
 		neighbors[i].nID = routerID;
