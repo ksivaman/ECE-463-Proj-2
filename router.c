@@ -3,7 +3,7 @@
 #include <pthread.h>
 #include <time.h>
 #include <math.h>
-
+#include <string.h>
 
 /* ----- Function Declarations ----- */
 void *timer_thread(void *arguments);
@@ -16,7 +16,7 @@ int nefd, rID, tim_update_interval, tim_converge_interval;
 struct sockaddr_in serveraddr;
 pthread_mutex_t lock;
 int print_permission = 1;
-FILE *fptr;
+FILE *fptr = NULL;
 
 /* Create a struct to store the info of neighbors to the router.
    This will be used for sending update messages. */
@@ -176,7 +176,7 @@ int main (int argc, char *argv[])
 	/* ----- END 2.d ----- */
 
 	char filename[11] = "router0.log";
-	filename[6] = filename[6] + rID;
+	filename[6] = (char) (filename[6] + rID);
 	fptr = fopen(filename, "w");
 
 	PrintRoutes(fptr, rID);
@@ -201,6 +201,7 @@ int main (int argc, char *argv[])
 	pthread_join(udp_thread_id, NULL);
 	pthread_join(timer_thread_id, NULL);
 
+	fclose(fptr);
 	return 1;
 }
 

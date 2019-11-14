@@ -1,5 +1,5 @@
-CFLAGS = -g -Wall -lpthread -Wshadow --pedantic -Wvla -Werror
-CC = gcc
+CFLAGS = -g -Wall -lpthread 
+CC = gcc -std=c99
 
 # change based on type of router to be built
 # value can be either DISTVECTOR or PATHVECTOR
