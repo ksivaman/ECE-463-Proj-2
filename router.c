@@ -11,16 +11,12 @@ void *udp_thread(void *arguments);
 int update_tim_last_update(int yourID);
 void update_nbr_info(struct pkt_INIT_RESPONSE *InitResponse);
 
-	FILE *fptr;
-
-
 /* ----- GLOBAL VARIABLES ----- */
 int nefd, rID, tim_update_interval, tim_converge_interval;
-socklen_t recvfrom_size;
-struct sockaddr_in serveraddr, recvaddr;
+struct sockaddr_in serveraddr;
 pthread_mutex_t lock;
 int print_permission = 1;
-
+FILE *fptr;
 
 /* Create a struct to store the info of neighbors to the router.
    This will be used for sending update messages. */
@@ -30,7 +26,7 @@ struct neighbor_info {
 	int tim_last_update;
 };
 
-int no_nbrs;
+int no_nbrs = 0;
 struct neighbor_info neighbors[MAX_ROUTERS];
 
 
@@ -119,6 +115,8 @@ int main (int argc, char *argv[])
 	char *hostname;
 	int sendto_size, pkt_size;
 	struct hostent *hp;
+	socklen_t recvfrom_size;
+	struct sockaddr_in recvaddr;
 	struct pkt_INIT_RESPONSE init_response;
 	struct pkt_INIT_REQUEST init_request;
 	pthread_t udp_thread_id;
@@ -214,6 +212,7 @@ void *udp_thread(void *arguments) {
 	pthread_mutex_lock(&lock);
 	int nefd_local = nefd;
 	pthread_mutex_unlock(&lock);
+	bzero(&recvaddr_local, sizeof(recvaddr_local));
 	recvfrom_size_local = sizeof(recvaddr_local);
 
 	while(1) {
@@ -223,7 +222,6 @@ void *udp_thread(void *arguments) {
 		nbr_cost = update_tim_last_update(pkt_update_in_local.sender_id);
 		update_flag = UpdateRoutes(&pkt_update_in_local, nbr_cost, rID);
 		if (update_flag) {
-			//printf("--%d--\n", pkt_update_in_local.no_routes);
 			PrintRoutes(fptr, rID);
 			fflush(fptr);
 			tim_converge_interval = time(NULL);
@@ -244,6 +242,9 @@ void *timer_thread(void *arguments) {
 	int update_size = sizeof(pkt_update_out);
 	int sendto_size;
 	sendto_size = sizeof(serveraddr);
+	int DeadRouters[MAX_ROUTERS];
+	for (int i = 0; i < MAX_ROUTERS; i++)
+		DeadRouters[i] = 0;
 
 	while (1) {
 
@@ -266,9 +267,14 @@ void *timer_thread(void *arguments) {
 		for (int i=0; i < no_nbrs; i++) {
 			if ((time(NULL) - neighbors[i].tim_last_update) > FAILURE_DETECTION) {
 				UninstallRoutesOnNbrDeath(neighbors[i].nID);
-				//PrintRoutes(fptr, rID);
-				//printf("Uninstalling %d\n", i);
+				if (DeadRouters[i] == 0)
+				{
+					PrintRoutes(fptr, rID);
+					DeadRouters[i] = 1;
+				}
 			}
+			else
+				DeadRouters[i] = 0;
 			// Have to remove from neighbor table and add locks
 		}
 		pthread_mutex_unlock(&lock);
@@ -277,10 +283,9 @@ void *timer_thread(void *arguments) {
 		// Convergence Checking
 		if (((time(NULL) - tim_converge_interval) > CONVERGE_TIMEOUT) && print_permission) {
 			printf("Converged\n");
-			//time_t curr = time(NULL);
 			fprintf(fptr, "%d:Converged\n", (int) time(NULL) - tim_converge_interval);
-			PrintRoutes(fptr, rID);
 			fflush(fptr);
+			PrintRoutes(fptr, rID);
 			printf("Done");
 			print_permission = 0;
 		}

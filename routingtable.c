@@ -75,14 +75,14 @@ int UpdateRoutes(struct pkt_RT_UPDATE *RecvdUpdatePacket, int costToNbr, int myI
 			}
 			else
 			{
-				check3 = (routingTable[routeEntry.dest_id].cost != INFINITY);
+				check3 = (routingTable[routeEntry.dest_id].cost - INFINITY);
 				routingTable[routeEntry.dest_id].cost = INFINITY;
 			}
 
 			check4 = routingTable[routeEntry.dest_id].path_len - (routeEntry.path_len + 1);
 			routingTable[routeEntry.dest_id].path_len = routeEntry.path_len + 1;
 
-			if (routeEntry.cost < 999) {
+			if (routeEntry.cost < INFINITY) {
 				routingTable[routeEntry.dest_id].path[0] = myID;
 				for (int j = 0; j < routeEntry.path_len; j++) {
 					routingTable[routeEntry.dest_id].path[j + 1] = routeEntry.path[j];
