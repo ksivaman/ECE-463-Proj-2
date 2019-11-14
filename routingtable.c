@@ -7,7 +7,6 @@ struct route_entry routingTable[MAX_ROUTERS];
 int NumRoutes;
 
 
-////////////////////////////////////////////////////////////////
 void InitRoutingTbl (struct pkt_INIT_RESPONSE *InitResponse, int myID){
 	/* ----- YOUR CODE HERE ----- */
 	// Initialize router table
@@ -36,7 +35,6 @@ void InitRoutingTbl (struct pkt_INIT_RESPONSE *InitResponse, int myID){
 }
 
 
-////////////////////////////////////////////////////////////////
 int UpdateRoutes(struct pkt_RT_UPDATE *RecvdUpdatePacket, int costToNbr, int myID){
 	/* ----- YOUR CODE HERE ----- */
 	struct route_entry routeEntry;
@@ -98,15 +96,16 @@ int UpdateRoutes(struct pkt_RT_UPDATE *RecvdUpdatePacket, int costToNbr, int myI
 	return routingTableChange;
 }
 
-////////////////////////////////////////////////////////////////
+
 void ConvertTabletoPkt(struct pkt_RT_UPDATE *UpdatePacketToSend, int myID)
 {
 	/* ----- YOUR CODE HERE ----- */
 	UpdatePacketToSend->sender_id = myID;
 	UpdatePacketToSend->no_routes = NumRoutes;
 	int j = 0;
+	int i = 0;
 
-	for (int i = 0; i < MAX_ROUTERS; i++)
+	for (i = 0; i < MAX_ROUTERS; i++)
 	{
 		if (routingTable[i].path_len != 0)
 		{
@@ -124,8 +123,6 @@ void ConvertTabletoPkt(struct pkt_RT_UPDATE *UpdatePacketToSend, int myID)
 }
 
 
-////////////////////////////////////////////////////////////////
-//It is highly recommended that you do not change this function!
 void PrintRoutes (FILE* Logfile, int myID){
 	/* ----- PRINT ALL ROUTES TO LOG FILE ----- */
 	int i;
@@ -144,7 +141,6 @@ void PrintRoutes (FILE* Logfile, int myID){
 }
 
 
-////////////////////////////////////////////////////////////////
 void UninstallRoutesOnNbrDeath(int DeadNbr)
 {
 	/* ----- YOUR CODE HERE ----- */
