@@ -1,4 +1,4 @@
-CFLAGS = -g -Wall -lpthread
+CFLAGS = -g -Wall -lpthread -Wshadow --pedantic -Wvla -Werror
 CC = gcc
 
 # change based on type of router to be built
@@ -21,7 +21,7 @@ endian.o   :   ne.h endian.c
 
 routingtable.o   :   ne.h routingtable.c
 	$(CC) $(CFLAGS) -D $(ROUTERMODE) -c routingtable.c
-	
+
 router  :   endian.o routingtable.o router.c
 	$(CC) $(CFLAGS) -D $(ROUTERMODE) -D DEBUG=$(DEBUG) endian.o routingtable.o router.c -o router -lnsl $(SOCKETLIB)
 
@@ -32,3 +32,4 @@ clean :
 	rm -f *.o
 	rm -f router
 	rm -f unit-test
+	rm -f *.log

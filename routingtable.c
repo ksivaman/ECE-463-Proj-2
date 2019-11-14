@@ -41,17 +41,17 @@ int UpdateRoutes(struct pkt_RT_UPDATE *RecvdUpdatePacket, int costToNbr, int myI
 	/* ----- YOUR CODE HERE ----- */
 	struct route_entry routeEntry;
 	int routingTableChange = 0;
-	int check1, check2, check3, check4;
+	int check1, check2, check3, check4, i, j, k;
 
-	for (int i = 0; i < RecvdUpdatePacket->no_routes; i++)
+	for (i = 0; i < RecvdUpdatePacket->no_routes; i++)
 	{
 		routeEntry = RecvdUpdatePacket->route[i];
 
 		// Split Horizon
 		int split = 0;
-		for (int i = 0; i < routeEntry.path_len; i++)
+		for (j = 0; j < routeEntry.path_len; j++)
 		{
-			if (routeEntry.path[i] == myID)
+			if (routeEntry.path[j] == myID)
 				split = 1;
 		}
 
@@ -84,8 +84,8 @@ int UpdateRoutes(struct pkt_RT_UPDATE *RecvdUpdatePacket, int costToNbr, int myI
 
 			if (routeEntry.cost < INFINITY) {
 				routingTable[routeEntry.dest_id].path[0] = myID;
-				for (int j = 0; j < routeEntry.path_len; j++) {
-					routingTable[routeEntry.dest_id].path[j + 1] = routeEntry.path[j];
+				for (k = 0; k < routeEntry.path_len; k++) {
+					routingTable[routeEntry.dest_id].path[k + 1] = routeEntry.path[k];
 				}
 			}
 

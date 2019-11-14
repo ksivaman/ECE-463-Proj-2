@@ -70,7 +70,7 @@ int open_listenfd_udp(int port)
 {
 	int n = 0;
 	int listenfd, optval=1;
-	struct sockaddr_in serveraddr;
+	struct sockaddr_in serveraddr_local;
 
 	/* Create a socket descriptor */
 	if ((listenfd = socket(AF_INET, SOCK_DGRAM, 0)) < 0)
@@ -83,11 +83,11 @@ int open_listenfd_udp(int port)
 
 	/* Listenfd will be an endpoint for all requests to port
 	   on any IP address for this host */
-	bzero((char *) &serveraddr, sizeof(serveraddr));
-	serveraddr.sin_family = AF_INET;
-	serveraddr.sin_addr.s_addr = htonl(INADDR_ANY);
-	serveraddr.sin_port = htons((unsigned short)port);
-	if ((n=bind(listenfd, (struct sockaddr *)&serveraddr, sizeof(serveraddr))) < 0)
+	bzero((char *) &serveraddr_local, sizeof(serveraddr_local));
+	serveraddr_local.sin_family = AF_INET;
+	serveraddr_local.sin_addr.s_addr = htonl(INADDR_ANY);
+	serveraddr_local.sin_port = htons((unsigned short)port);
+	if ((n=bind(listenfd, (struct sockaddr *)&serveraddr_local, sizeof(serveraddr_local))) < 0)
 	{
 		if (n == -1)
 		{
@@ -151,6 +151,7 @@ int main (int argc, char *argv[])
 
 
 	// 2.b) Set up packet for initial request.
+	bzero(&init_request, sizeof(init_request));
 	init_request.router_id = htonl(rID); //htons(rID);
 	/* ----- END 2.b ----- */
 
@@ -164,6 +165,8 @@ int main (int argc, char *argv[])
 
 	// 2.d) Receive update packet from NE.  Interpret response.
 	pkt_size = sizeof(init_response);
+	bzero(&recvaddr, sizeof(recvaddr));
+	recvfrom_size = sizeof(recvaddr);
 	recvfrom(nefd, &init_response, pkt_size, 0, (struct sockaddr *) &recvaddr, &recvfrom_size);
 
 	ntoh_pkt_INIT_RESPONSE(&init_response);
