@@ -6,17 +6,17 @@ Basic 5_routers.conf Convergence: does not always converge to correct routing ta
 Basic 10_routers.conf Convergence: crashes once in a while
 
 BASIC CONVERGENCE TEST CASES:
-Basic 2_routers.conf Convergence:
-Basic 4_routers.conf Convergence:
-Basic 5_routers.conf Convergence:
-Basic 10_routers.conf Convergence:
+Basic 2_routers.conf Convergence: Consistently converges correctly. Works with multiple failures and restarts.
+Basic 4_routers.conf Convergence: Consistently converges correctly. Works with multiple failures and restarts. Tested multiple simultaneous node failures with no issues.
+Basic 5_routers.conf Convergence: Consistently converges correctly. Works with multiple failures and restarts.
+Basic 10_routers.conf Convergence: Converges correctly with multiple failures and restarts. However, if other applications are open on the computer, the computer slows down to the point where routers think that other routers have failed due to timeouts. However, this isn't an issue if these are the only processes on the computer (in other words, it works if you close google chrome and your text editor).
 
-VALGRIND TEST CASE:
-Indicate Topology:
-Result of Valgrind:
+VALGRIND TEST CASE: 
+Indicate Topology: Tested valgrind with 4_routers.conf and the --leak-check=full flag.
+Result of Valgrind: Zero errors during normal testing. When a router is killed, however, there are small memory leaks. We believe these to be associated with killing the process.
 
 KILL AND REVIVE ROUTER TEST CASE:
-Indicate Topology:
-Indicate Router to kill/revive:
-Convergence after Killing Router:
-Convergence after RevivingRouter:
+Indicate Topology: 2_routers.conf, 4_routers.conf, 5_routers.conf, and 10_routers.conf
+Indicate Router to kill/revive: For 2_routers, each one separately.  For 4_routers, each one individually, and then combined every possible pair.  For 5_routers, each one individually and some combinations.  For 10_routers, each one individually.
+Convergence after Killing Router: No issues for any of 2, 4, 5, or 10 routers.
+Convergence after RevivingRouter: No issues for any of 2, 4, 5, or 10 routers.
