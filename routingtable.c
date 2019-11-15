@@ -44,6 +44,9 @@ int UpdateRoutes(struct pkt_RT_UPDATE *RecvdUpdatePacket, int costToNbr, int myI
 	for (i = 0; i < RecvdUpdatePacket->no_routes; i++)
 	{
 		routeEntry = RecvdUpdatePacket->route[i];
+		if(routeEntry.path_len == MAX_PATH_LEN){
+      routingTable[i].cost = INFINITY;
+		}
 
 		// Split Horizon
 		int split = 0;
