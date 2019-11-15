@@ -12,7 +12,7 @@ int update_tim_last_update(int yourID);
 void update_nbr_info(struct pkt_INIT_RESPONSE *InitResponse);
 
 /* ----- GLOBAL VARIABLES ----- */
-int nefd, rID, tim_update_interval, tim_converge_interval;
+int nefd, rID, tim_update_interval, tim_converge_interval, start_time;
 struct sockaddr_in serveraddr;
 pthread_mutex_t lock;
 int print_permission = 1;
@@ -184,6 +184,7 @@ int main (int argc, char *argv[])
 	// 3) Setup variables and begin multi-threading.
 	tim_update_interval = time(NULL);
 	tim_converge_interval = time(NULL);
+	start_time = time(NULL);
 
 	pthread_mutex_init(&lock, NULL);
 
@@ -291,7 +292,7 @@ void *timer_thread(void *arguments) {
 		if (((time(NULL) - tim_converge_interval) > CONVERGE_TIMEOUT) && print_permission) {
 			printf("Converged\n");
 			PrintRoutes(fptr, rID);
-			fprintf(fptr, "%d:Converged\n", (int) time(NULL) - tim_converge_interval);
+			fprintf(fptr, "%d:Converged\n", (int) time(NULL) - start_time);
 			fflush(fptr);
 			tim_converge_interval = time(NULL);
 			print_permission = 0;
