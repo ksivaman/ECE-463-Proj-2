@@ -6,7 +6,6 @@
 struct route_entry routingTable[MAX_ROUTERS];
 int NumRoutes;
 
-
 void InitRoutingTbl (struct pkt_INIT_RESPONSE *InitResponse, int myID){
 	/* ----- YOUR CODE HERE ----- */
 	// Initialize router table

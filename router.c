@@ -247,7 +247,7 @@ void *timer_thread(void *arguments) {
 	int sendto_size;
 	sendto_size = sizeof(serveraddr);
 	int DeadRouters[MAX_ROUTERS];
-	int i;
+	int i = 0;
 	for (i = 0; i < MAX_ROUTERS; i++)
 		DeadRouters[i] = 0;
 
@@ -290,7 +290,7 @@ void *timer_thread(void *arguments) {
 		// Convergence Checking
 		if (((time(NULL) - tim_converge_interval) > CONVERGE_TIMEOUT) && print_permission) {
 			printf("Converged\n");
-			PrintRoutes(fptr, rID);
+			//PrintRoutes(fptr, rID);
 			fprintf(fptr, "%d:Converged\n", (int) time(NULL) - tim_converge_interval);
 			fflush(fptr);
 			tim_converge_interval = time(NULL);
